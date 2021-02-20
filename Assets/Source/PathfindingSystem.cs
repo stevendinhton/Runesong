@@ -19,7 +19,9 @@ public class PathfindingSystem : ComponentSystem {
         NativeList<JobHandle> jobHandles = new NativeList<JobHandle>(Allocator.Temp);
 
         Entities.ForEach((Entity entity, DynamicBuffer<PathfindingRoute> pathRoute, ref PathfindingParams pathfindingParams) => {
+            float startTime = UnityEngine.Time.realtimeSinceStartup;
             NativeArray<PathNode> pathNodes = new NativeArray<PathNode>(WorldManager.PathNodes, Allocator.TempJob);
+            Debug.Log("Time(creating nativearray): " + ((UnityEngine.Time.realtimeSinceStartup - startTime) * 1000f));
             PathFinderJob pathfinderJob = new PathFinderJob {
                 positionStart = pathfindingParams.startPosition,
                 positionEnd = pathfindingParams.endPosition,
@@ -54,6 +56,7 @@ public class PathfindingSystem : ComponentSystem {
         public DynamicBuffer<PathfindingRoute> pathRoute;
 
         [DeallocateOnJobCompletion]
+        [ReadOnly]
         public NativeArray<PathNode> pathNodes;
 
         public void Execute() {
@@ -101,7 +104,6 @@ public class PathfindingSystem : ComponentSystem {
                         neighbourNode.gCost = tentativeGCost;
                         neighbourNode.hCost = CalculateDistanceCost(new int2(neighbourNode.x, neighbourNode.y), positionEnd);
                         neighbourNode.UpdateFCost();
-                        pathNodes[neighbourNode.index] = neighbourNode;
 
                         if (!containsNode(openList, neighbourNode)) {
                             openList.Add(neighbourNode);
@@ -111,70 +113,24 @@ public class PathfindingSystem : ComponentSystem {
             }
 
             pathRoute.Clear();
-
-            if (pathNodes[endNodeIndex].cameFromNodeIndex == -1) {
+            
+            if (!containsNode(closedList, pathNodes[endNodeIndex])) {
                 routeFollow[entity] = new PathfindingRouteFollow { routeIndex = -1 };
-                //routeFollow = new PathfindingRouteFollow { routeIndex = -1 };
             } else {
-                setPath(pathNodes, pathNodes[endNodeIndex], pathRoute);
-                routeFollow[entity] = new PathfindingRouteFollow { routeIndex = pathRoute.Length -1 };
-                //routeFollow = new PathfindingRouteFollow { routeIndex = pathRoute.Length - 1 };
+                setPath(closedList, endNodeIndex, pathRoute);
+                routeFollow[entity] = new PathfindingRouteFollow { routeIndex = pathRoute.Length - 1 };
             }
             
             openList.Dispose();
             closedList.Dispose();
         }
 
-        private NativeArray<PathNode> getPathNodeArray(NativeArray<MapTile> mapTiles, int2 gridSize, int2 positionEnd) {
-            NativeArray<PathNode> pathNodes = new NativeArray<PathNode>(gridSize.x * gridSize.y, Allocator.Temp);
-
-            // set up all path nodes
-            for (int x = 0; x < gridSize.x; x++) {
-                for (int y = 0; y < gridSize.y; y++) {
-                    PathNode pathNode = new PathNode();
-                    pathNode.x = x;
-                    pathNode.y = y;
-                    pathNode.index = getNodeIndex(x, y, gridSize);
-                    pathNode.walkable = mapTiles[x + y * gridSize.x].traversable;
-                    pathNode.cameFromNodeIndex = -1;
-
-                    pathNodes[pathNode.index] = pathNode;
-                }
-            }
-
-            //Debug.Log("Time(getPathNodeArray total): " + ((UnityEngine.Time.realtimeSinceStartup - startTime) * 1000f));
-            return pathNodes;
-        }
-
-        private NativeList<int2> getPath(NativeArray<PathNode> pathNodes, PathNode endNode) {
-            PathNode currentNode = endNode;
-            NativeList<int2> path = new NativeList<int2>(Allocator.Temp);
-
-            if (currentNode.cameFromNodeIndex == -1) {
-                return path; // return empty path if no path was found
-            }
-
-            path.Add(new int2(currentNode.x, currentNode.y));
-
-            while (currentNode.cameFromNodeIndex != -1) {
-                PathNode cameFromNode = pathNodes[currentNode.cameFromNodeIndex];
-                path.Add(new int2(cameFromNode.x, cameFromNode.y));
-                currentNode = cameFromNode;
-            }
-            return path;
-        }
-
-        private void setPath(NativeArray<PathNode> pathNodes, PathNode endNode, DynamicBuffer<PathfindingRoute> route) {
-            PathNode currentNode = endNode;
-
-            if (currentNode.cameFromNodeIndex == -1) {
-                // return empty path if no path was found
-            }
-
+        private void setPath(NativeList<PathNode> pathNodes, int endNodeIndex, DynamicBuffer<PathfindingRoute> route) {
+            PathNode currentNode = getNodeInList(pathNodes, endNodeIndex);
             route.Add(new PathfindingRoute { position = new int2(currentNode.x, currentNode.y) });
 
             while (currentNode.cameFromNodeIndex != -1) {
-                PathNode cameFromNode = pathNodes[currentNode.cameFromNodeIndex];
+                PathNode cameFromNode = getNodeInList(pathNodes, currentNode.cameFromNodeIndex);
                 route.Add(new PathfindingRoute { position = new int2(cameFromNode.x, cameFromNode.y) });
                 currentNode = cameFromNode;
             }
@@ -258,6 +214,15 @@ public class PathfindingSystem : ComponentSystem {
                 }
             }
             return false;
+        }
+
+        private PathNode getNodeInList(NativeList<PathNode> list, int nodeIndex) {
+            for (int i = 0; i < list.Length; i++) {
+                if (list[i].index == nodeIndex) {
+                    return list[i];
+                }
+            }
+            throw new Exception();
         }
 
         private bool IsPositionInsideGrid(int2 gridPosition, int2 gridSize) {

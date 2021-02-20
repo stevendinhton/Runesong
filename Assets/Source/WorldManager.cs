@@ -4,11 +4,13 @@ using UnityEngine;
 using Map;
 using UnityEngine.Tilemaps;
 using Unity.Mathematics;
+using Unity.Collections;
 using static PathfindingSystem;
 
 public class WorldManager : MonoBehaviour {
     
     public static MapWorld MapWorld { private set; get; }
+    //public static NativeArray<PathNode> PathNodes { private set; get; } 
     public static PathNode[] PathNodes { private set; get; } 
 
     public int regionSize;
@@ -89,8 +91,7 @@ public class WorldManager : MonoBehaviour {
     private void SetTileMap() {
         Vector3Int[] locations = new Vector3Int[MapWorld.GetTotalNumMapTiles()];
         TileBase[] tileArray = new TileBase[MapWorld.GetTotalNumMapTiles()];
-
-        float startTime = Time.realtimeSinceStartup;
+        
         for (int i = 0; i < MapWorld.mapRegions.Length; i++) {
             MapTile[] mapTilesInRegion = MapWorld.mapRegions[i].mapTiles;
 
@@ -104,6 +105,7 @@ public class WorldManager : MonoBehaviour {
     }
 
     private void SetPathNodes() {
+        //PathNodes = new NativeArray<PathNode>(MapWorld.GetPathNodes(), Allocator.Persistent);
         PathNodes = MapWorld.GetPathNodes();
     }
 }
