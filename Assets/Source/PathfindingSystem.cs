@@ -61,7 +61,7 @@ public class PathfindingSystem : ComponentSystem {
 
         public void Execute() {
 
-            int endNodeIndex = getNodeIndex(positionEnd.x, positionEnd.y, gridSize);
+            int endNodeIndex = getNodeIndex(positionEnd.x, positionEnd.y);
 
             if (!pathNodes[endNodeIndex].walkable) {
                 routeFollow[entity] = new PathfindingRouteFollow { routeIndex = -1 };
@@ -71,7 +71,7 @@ public class PathfindingSystem : ComponentSystem {
             NativeList<PathNode> openList = new NativeList<PathNode>(Allocator.Temp);
             NativeList<PathNode> closedList = new NativeList<PathNode>(Allocator.Temp);
 
-            PathNode startNode = pathNodes[getNodeIndex(positionStart.x, positionStart.y, gridSize)];
+            PathNode startNode = pathNodes[getNodeIndex(positionStart.x, positionStart.y)];
 
             startNode.gCost = 0;
             startNode.hCost = CalculateDistanceCost(new int2(startNode.x, startNode.y), positionEnd);
@@ -82,7 +82,7 @@ public class PathfindingSystem : ComponentSystem {
                 PathNode currentNode = getNodeWithLowestFCost(ref openList);
                 closedList.Add(currentNode);
 
-                if (currentNode.index == endNodeIndex) {
+                if (getNodeIndex(currentNode.x, currentNode.y) == endNodeIndex) {
                     break;
                 }
 
@@ -100,7 +100,7 @@ public class PathfindingSystem : ComponentSystem {
 
                     int tentativeGCost = currentNode.gCost + CalculateDistanceCost(currentPosition, neighbourPosition);
                     if (!containsNode(openList, neighbourNode) || tentativeGCost < neighbourNode.gCost) {
-                        neighbourNode.cameFromNodeIndex = currentNode.index;
+                        neighbourNode.cameFromNodeIndex = getNodeIndex(currentNode.x, currentNode.y);
                         neighbourNode.gCost = tentativeGCost;
                         neighbourNode.hCost = CalculateDistanceCost(new int2(neighbourNode.x, neighbourNode.y), positionEnd);
                         neighbourNode.UpdateFCost();
@@ -160,7 +160,7 @@ public class PathfindingSystem : ComponentSystem {
                     continue;
                 }
 
-                int neighbourIndex = getNodeIndex(adjacentPosition.x, adjacentPosition.y, gridSize);
+                int neighbourIndex = getNodeIndex(adjacentPosition.x, adjacentPosition.y);
 
                 if (pathNodes[neighbourIndex].walkable) {
                     eligibleNeighbours.Add(pathNodes[neighbourIndex]);
@@ -177,9 +177,9 @@ public class PathfindingSystem : ComponentSystem {
                     continue;
                 }
 
-                int neighbourIndex = getNodeIndex(diagonalPosition.x, diagonalPosition.y, gridSize);
-                int cornerIndex1 = getNodeIndex(cornerPosition1.x, cornerPosition1.y, gridSize);
-                int cornerIndex2 = getNodeIndex(cornerPosition2.x, cornerPosition2.y, gridSize);
+                int neighbourIndex = getNodeIndex(diagonalPosition.x, diagonalPosition.y);
+                int cornerIndex1 = getNodeIndex(cornerPosition1.x, cornerPosition1.y);
+                int cornerIndex2 = getNodeIndex(cornerPosition2.x, cornerPosition2.y);
 
                 if (pathNodes[neighbourIndex].walkable &&
                     pathNodes[cornerIndex1].walkable &&
@@ -209,7 +209,7 @@ public class PathfindingSystem : ComponentSystem {
 
         private bool containsNode(NativeList<PathNode> list, PathNode node) {
             for (int i = 0; i < list.Length; i++) {
-                if (list[i].index == node.index) {
+                if (list[i].x == node.x && list[i].y == node.y) {
                     return true;
                 }
             }
@@ -218,7 +218,7 @@ public class PathfindingSystem : ComponentSystem {
 
         private PathNode getNodeInList(NativeList<PathNode> list, int nodeIndex) {
             for (int i = 0; i < list.Length; i++) {
-                if (list[i].index == nodeIndex) {
+                if (getNodeIndex(list[i].x, list[i].y) == nodeIndex) {
                     return list[i];
                 }
             }
@@ -232,10 +232,10 @@ public class PathfindingSystem : ComponentSystem {
                 gridPosition.x < gridSize.x &&
                 gridPosition.y < gridSize.y;
         }
-    }
 
-    private static int getNodeIndex(int x, int y, int2 gridSize) {
-        return x + y * gridSize.x;
+        private int getNodeIndex(int x, int y) {
+            return x + y * gridSize.x;
+        }
     }
 
     private static int CalculateDistanceCost(int2 aPosition, int2 bPosition) {
@@ -246,9 +246,8 @@ public class PathfindingSystem : ComponentSystem {
     }
 
     public struct PathNode {
-        public int x;
-        public int y;
-        public int index;
+        public ushort x;
+        public ushort y;
 
         public int gCost; // distance from starting node
         public int hCost; // heuristic distance from end node

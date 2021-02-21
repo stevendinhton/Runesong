@@ -85,14 +85,14 @@ namespace Map {
             // set up all path nodes
             for (int x = 0; x < regionSize; x++) {
                 for (int y = 0; y < regionSize; y++) {
-                    PathNode pathNode = new PathNode();
-                    pathNode.x = x;
-                    pathNode.y = y;
-                    pathNode.index = x + y * regionSize;
-                    pathNode.walkable = GetMapTileAt(x, y).traversable;
-                    pathNode.cameFromNodeIndex = -1;
+                    PathNode pathNode = new PathNode {
+                        x = (ushort)x,
+                        y = (ushort)y,
+                        walkable = GetMapTileAt(x, y).traversable,
+                        cameFromNodeIndex = -1
+                    };
 
-                    pathNodes[pathNode.index] = pathNode;
+                    pathNodes[x + y * regionSize] = pathNode;
                 }
             }
 

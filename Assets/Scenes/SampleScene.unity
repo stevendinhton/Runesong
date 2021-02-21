@@ -383,7 +383,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e75641fc18b8b164bb59e9353d805f6a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  regionSize: 16
+  regionSize: 1024
   worldSizeByRegions: 1
   tilemap: {fileID: 1518512143}
   tile:
