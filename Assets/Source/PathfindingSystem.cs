@@ -19,9 +19,6 @@ public class PathfindingSystem : ComponentSystem {
         NativeList<JobHandle> jobHandles = new NativeList<JobHandle>(Allocator.Temp);
 
         Entities.ForEach((Entity entity, DynamicBuffer<PathfindingRoute> pathRoute, ref PathfindingParams pathfindingParams) => {
-            float startTime = UnityEngine.Time.realtimeSinceStartup;
-            NativeArray<PathNode> pathNodes = new NativeArray<PathNode>(WorldManager.PathNodes, Allocator.TempJob);
-            Debug.Log("Time(creating nativearray): " + ((UnityEngine.Time.realtimeSinceStartup - startTime) * 1000f));
             PathFinderJob pathfinderJob = new PathFinderJob {
                 positionStart = pathfindingParams.startPosition,
                 positionEnd = pathfindingParams.endPosition,
@@ -29,7 +26,7 @@ public class PathfindingSystem : ComponentSystem {
                 entity = entity,
                 routeFollow = GetComponentDataFromEntity<PathfindingRouteFollow>(),
                 pathRoute = pathRoute,
-                pathNodes = pathNodes
+                pathNodes = WorldManager.PathNodesNA
             };
 
             jobHandles.Add(pathfinderJob.Schedule());
@@ -55,7 +52,7 @@ public class PathfindingSystem : ComponentSystem {
         [NativeDisableContainerSafetyRestriction]
         public DynamicBuffer<PathfindingRoute> pathRoute;
 
-        [DeallocateOnJobCompletion]
+        //[DeallocateOnJobCompletion]
         [ReadOnly]
         public NativeArray<PathNode> pathNodes;
 
@@ -110,6 +107,8 @@ public class PathfindingSystem : ComponentSystem {
                         }
                     }
                 }
+
+                eligibleNeighbours.Dispose();
             }
 
             pathRoute.Clear();
@@ -187,6 +186,8 @@ public class PathfindingSystem : ComponentSystem {
                     eligibleNeighbours.Add(pathNodes[neighbourIndex]);
                 }
             }
+            adjacentOffsetArray.Dispose();
+            diagonalOffsetArray.Dispose();
 
             return eligibleNeighbours;
         }

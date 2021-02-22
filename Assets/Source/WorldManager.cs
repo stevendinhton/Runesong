@@ -10,8 +10,7 @@ using static PathfindingSystem;
 public class WorldManager : MonoBehaviour {
     
     public static MapWorld MapWorld { private set; get; }
-    //public static NativeArray<PathNode> PathNodes { private set; get; } 
-    public static PathNode[] PathNodes { private set; get; } 
+    public static NativeArray<PathNode> PathNodesNA { private set; get; } 
 
     public int regionSize;
     public int worldSizeByRegions;
@@ -105,7 +104,6 @@ public class WorldManager : MonoBehaviour {
     }
 
     private void SetPathNodes() {
-        //PathNodes = new NativeArray<PathNode>(MapWorld.GetPathNodes(), Allocator.Persistent);
-        PathNodes = MapWorld.GetPathNodes();
+        PathNodesNA = new NativeArray<PathNode>(MapWorld.GetPathNodes(), Allocator.Persistent);
     }
 }

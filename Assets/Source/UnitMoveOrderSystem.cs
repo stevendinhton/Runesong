@@ -25,10 +25,10 @@ public class UnitMoveOrderSystem : ComponentSystem {
                 });
             });
         }
-        
+        /*
         int gridSize = WorldManager.MapWorld.regionSize;
         System.Random rnd = new System.Random();
-
+        
         Entities.ForEach((Entity entity, ref Translation translation, ref PathfindingRouteFollow routeFollow) => {
 
             // Add Pathfinding Params
@@ -41,6 +41,6 @@ public class UnitMoveOrderSystem : ComponentSystem {
                     endPosition = new int2(rnd.Next(0, gridSize - 1), rnd.Next(0, gridSize - 1))
                 });
             }
-        });
+        });*/
     }
 }
