@@ -5,7 +5,6 @@ using Unity.Entities;
 using Unity.Transforms;
 using Unity.Mathematics;
 
-
 public class UnitMoveOrderSystem : ComponentSystem {
     protected override void OnUpdate() {
         if (Input.GetMouseButtonDown(0)) {
@@ -25,7 +24,8 @@ public class UnitMoveOrderSystem : ComponentSystem {
                 });
             });
         }
-        /*
+
+        
         int gridSize = WorldManager.MapWorld.regionSize;
         System.Random rnd = new System.Random();
         
@@ -41,6 +41,6 @@ public class UnitMoveOrderSystem : ComponentSystem {
                     endPosition = new int2(rnd.Next(0, gridSize - 1), rnd.Next(0, gridSize - 1))
                 });
             }
-        });*/
+        });
     }
 }

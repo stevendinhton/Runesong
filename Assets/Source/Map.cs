@@ -95,8 +95,6 @@ namespace Map {
                     pathNodes[x + y * regionSize] = pathNode;
                 }
             }
-
-            //Debug.Log("Time(getPathNodeArray total): " + ((UnityEngine.Time.realtimeSinceStartup - startTime) * 1000f));
             return pathNodes;
         }
     }

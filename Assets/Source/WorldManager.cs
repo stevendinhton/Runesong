@@ -35,7 +35,6 @@ public class WorldManager : MonoBehaviour {
 
     // Update is called once per frame
     void Update() {
-
     }
 
     private MapTile[] GetDefaultMapTiles(int regionSize) {
