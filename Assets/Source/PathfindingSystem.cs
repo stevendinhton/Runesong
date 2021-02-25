@@ -52,7 +52,6 @@ public class PathfindingSystem : ComponentSystem {
         [NativeDisableContainerSafetyRestriction]
         public DynamicBuffer<PathfindingRoute> pathRoute;
 
-        //[DeallocateOnJobCompletion]
         [ReadOnly]
         public NativeArray<PathNode> pathNodes;
 

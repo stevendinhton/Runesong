@@ -48,7 +48,8 @@ namespace Map {
         public int regionSize;
         public int mapWidthByRegions;
         public int mapHeightByRegions;
-        
+        public int MapItem;
+
         private int GetRegionIndex(int x, int y) {
             int regionLocationX = x / regionSize;
             int regionLocationY = y / regionSize;
@@ -97,5 +98,14 @@ namespace Map {
             }
             return pathNodes;
         }
+    }
+
+    public struct MapItem
+    {
+        public int locationX;
+        public int locationY;
+
+        public ushort itemNameCode;
+        public uint quantity;
     }
 }
