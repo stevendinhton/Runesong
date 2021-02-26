@@ -14,14 +14,17 @@ public class WorldManager : MonoBehaviour {
 
     public int regionSize;
     public int worldSizeByRegions;
-    public GameObject tilemap;
+    public GameObject tilemapGameObject;
     public TileBase[] tile;
     public int2[] walls;
 
     private Tile _baseTile;
+    private Tilemap tilemap;
 
     // Start is called before the first frame update
     void Start() {
+        tilemap = tilemapGameObject.GetComponent<Tilemap>();
+
         float startTime = Time.realtimeSinceStartup;
         CreateWorld();
         Debug.Log("Time(CreateWorld): " + ((Time.realtimeSinceStartup - startTime) * 1000f));
@@ -35,6 +38,33 @@ public class WorldManager : MonoBehaviour {
 
     // Update is called once per frame
     void Update() {
+        if (Input.GetMouseButtonDown(1)) {
+            Debug.Log("Right Mouse Button Down");
+
+            Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            Debug.Log(string.Format("Mouse click at [X: {0} Y: {0}]", pos.x, pos.y));
+
+            float startTime = Time.realtimeSinceStartup;
+            MapTile clickedTile = MapWorld.GetMapTileAt((int)pos.x, (int)pos.y);
+            clickedTile.traversable = !clickedTile.traversable;
+            clickedTile.materialSurface = clickedTile.traversable ? (ushort) 1 : (ushort) 2;
+            Debug.Log("Time(1): " + ((Time.realtimeSinceStartup - startTime) * 1000f));
+
+            UpdateTile(clickedTile);
+        }
+    }
+
+    public void UpdateTile(MapTile newTile) {
+        float startTime = Time.realtimeSinceStartup;
+        int x = newTile.locationX;
+        int y = newTile.locationY;
+        MapWorld.SetTile(newTile);
+        Debug.Log("Time(SetTile): " + ((Time.realtimeSinceStartup - startTime) * 1000f));
+
+        UpdateTileMap(newTile);
+        Debug.Log("Time(UpdateTileMap): " + ((Time.realtimeSinceStartup - startTime) * 1000f));
+        UpdatePathNodes();
+        Debug.Log("Time(UpdatePathNodes): " + ((Time.realtimeSinceStartup - startTime) * 1000f));
     }
 
     private MapTile[] GetDefaultMapTiles(int regionSize) {
@@ -82,9 +112,14 @@ public class WorldManager : MonoBehaviour {
             tile.traversable = false;
             tile.materialSurface = 2;
 
-            MapWorld.SetTileAt(tile, walls[i].x, walls[i].y);
+            MapWorld.SetTile(tile);
         }
     }
+
+    private void UpdateTileMap(MapTile newTile) {
+        tilemap.SetTile(new Vector3Int(newTile.locationX, newTile.locationY, 0), tile[newTile.materialSurface]);
+    }
+
 
     private void SetTileMap() {
         Vector3Int[] locations = new Vector3Int[MapWorld.GetTotalNumMapTiles()];
@@ -104,5 +139,10 @@ public class WorldManager : MonoBehaviour {
 
     private void SetPathNodes() {
         PathNodesNA = new NativeArray<PathNode>(MapWorld.GetPathNodes(), Allocator.Persistent);
+    }
+
+    private void UpdatePathNodes() {
+        PathNodesNA.Dispose();
+        SetPathNodes();
     }
 }

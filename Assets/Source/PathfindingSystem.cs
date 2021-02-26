@@ -13,6 +13,11 @@ using Map;
 
 public class PathfindingSystem : ComponentSystem {
 
+    private const int DiagonalCost = 14;
+    private const int AdjacentCost = 10;
+
+    enum PathfindingType { ToSpot, ToAdjacent };
+
     protected override void OnUpdate() {
         int2 gridSize = new int2(WorldManager.MapWorld.regionSize, WorldManager.MapWorld.regionSize);
 
@@ -20,13 +25,15 @@ public class PathfindingSystem : ComponentSystem {
 
         Entities.ForEach((Entity entity, DynamicBuffer<PathfindingRoute> pathRoute, ref PathfindingParams pathfindingParams) => {
             PathFinderJob pathfinderJob = new PathFinderJob {
+                pathfindingType = PathfindingType.ToAdjacent,
                 positionStart = pathfindingParams.startPosition,
                 positionEnd = pathfindingParams.endPosition,
                 gridSize = gridSize,
                 entity = entity,
                 routeFollow = GetComponentDataFromEntity<PathfindingRouteFollow>(),
                 pathRoute = pathRoute,
-                pathNodes = WorldManager.PathNodesNA
+                pathNodes = WorldManager.PathNodesNA,
+                targets = new NativeArray<int2>(0, Allocator.TempJob)
             };
 
             jobHandles.Add(pathfinderJob.Schedule());
@@ -43,6 +50,7 @@ public class PathfindingSystem : ComponentSystem {
         public int2 positionStart;
         public int2 positionEnd;
         public int2 gridSize;
+        public PathfindingType pathfindingType; 
 
         public Entity entity;
 
@@ -55,14 +63,24 @@ public class PathfindingSystem : ComponentSystem {
         [ReadOnly]
         public NativeArray<PathNode> pathNodes;
 
+        [DeallocateOnJobCompletion]
+        public NativeArray<int2> targets;
+
         public void Execute() {
 
-            int endNodeIndex = getNodeIndex(positionEnd.x, positionEnd.y);
-
-            if (!pathNodes[endNodeIndex].walkable) {
+            if (pathfindingType == PathfindingType.ToSpot && 
+                !pathNodes[getNodeIndex(positionEnd.x, positionEnd.y)].walkable) {
                 routeFollow[entity] = new PathfindingRouteFollow { routeIndex = -1 };
                 return;
             }
+
+            if (successfullyReachedTarget(positionStart)) {
+                pathRoute.Clear();
+                routeFollow[entity] = new PathfindingRouteFollow { routeIndex = -1 };
+                return;
+            }
+
+            bool foundPath = false;
 
             NativeList<PathNode> openList = new NativeList<PathNode>(Allocator.Temp);
             NativeList<PathNode> closedList = new NativeList<PathNode>(Allocator.Temp);
@@ -70,22 +88,29 @@ public class PathfindingSystem : ComponentSystem {
             PathNode startNode = pathNodes[getNodeIndex(positionStart.x, positionStart.y)];
 
             startNode.gCost = 0;
-            startNode.hCost = CalculateDistanceCost(new int2(startNode.x, startNode.y), positionEnd);
+            startNode.hCost = CalculateHeuristicCost(startNode.toInt2());
             startNode.UpdateFCost();
             openList.Add(startNode);
 
             while (openList.Length > 0) {
-                PathNode currentNode = getNodeWithLowestFCost(ref openList);
+                PathNode currentNode = popNodeWithLowestFCost(ref openList);
                 closedList.Add(currentNode);
 
-                if (getNodeIndex(currentNode.x, currentNode.y) == endNodeIndex) {
+                if (successfullyReachedTarget(currentNode.toInt2())) {
+                    foundPath = true;
                     break;
                 }
 
-                NativeList<PathNode> eligibleNeighbours = getEligibleNeighbours(currentNode, pathNodes, gridSize);
+                NativeList<PathNode> eligibleNeighbours = getEligibleNeighbours(currentNode, gridSize);
 
                 for (int i = 0; i < eligibleNeighbours.Length; i++) {
-                    PathNode neighbourNode = eligibleNeighbours[i];
+                    PathNode neighbourNode;
+
+                    if (containsNode(openList, eligibleNeighbours[i])) {
+                        neighbourNode = getNodeInList(openList, eligibleNeighbours[i].toInt2());
+                    } else {
+                        neighbourNode = eligibleNeighbours[i];
+                    }
 
                     if (containsNode(closedList, neighbourNode)) {
                         continue;
@@ -95,14 +120,16 @@ public class PathfindingSystem : ComponentSystem {
                     int2 neighbourPosition = new int2(neighbourNode.x, neighbourNode.y);
 
                     int tentativeGCost = currentNode.gCost + CalculateDistanceCost(currentPosition, neighbourPosition);
-                    if (!containsNode(openList, neighbourNode) || tentativeGCost < neighbourNode.gCost) {
+                    if (tentativeGCost < neighbourNode.gCost) {
                         neighbourNode.cameFromNodeIndex = getNodeIndex(currentNode.x, currentNode.y);
                         neighbourNode.gCost = tentativeGCost;
-                        neighbourNode.hCost = CalculateDistanceCost(new int2(neighbourNode.x, neighbourNode.y), positionEnd);
+                        neighbourNode.hCost = CalculateHeuristicCost(neighbourNode.toInt2());
                         neighbourNode.UpdateFCost();
 
                         if (!containsNode(openList, neighbourNode)) {
                             openList.Add(neighbourNode);
+                        } else {
+                            updateNodeInList(ref openList, neighbourNode);
                         }
                     }
                 }
@@ -111,30 +138,34 @@ public class PathfindingSystem : ComponentSystem {
             }
 
             pathRoute.Clear();
-            
-            if (!containsNode(closedList, pathNodes[endNodeIndex])) {
-                routeFollow[entity] = new PathfindingRouteFollow { routeIndex = -1 };
+
+            if (foundPath) {
+                updatePathing(closedList);
             } else {
-                setPath(closedList, endNodeIndex, pathRoute);
-                routeFollow[entity] = new PathfindingRouteFollow { routeIndex = pathRoute.Length - 1 };
+                routeFollow[entity] = new PathfindingRouteFollow { routeIndex = -1 };
             }
-            
             openList.Dispose();
             closedList.Dispose();
         }
+        private void setPathBuffer(NativeList<PathNode> closedList, DynamicBuffer<PathfindingRoute> route) {
+            PathNode endNode = closedList[closedList.Length - 1];
 
-        private void setPath(NativeList<PathNode> pathNodes, int endNodeIndex, DynamicBuffer<PathfindingRoute> route) {
-            PathNode currentNode = getNodeInList(pathNodes, endNodeIndex);
-            route.Add(new PathfindingRoute { position = new int2(currentNode.x, currentNode.y) });
+            PathNode currentNode = getNodeInList(closedList, endNode.toInt2());
+            route.Add(new PathfindingRoute { position = currentNode.toInt2() });
 
             while (currentNode.cameFromNodeIndex != -1) {
-                PathNode cameFromNode = getNodeInList(pathNodes, currentNode.cameFromNodeIndex);
+                PathNode cameFromNode = getNodeInList(closedList, getPositionFromIndex(currentNode.cameFromNodeIndex));
                 route.Add(new PathfindingRoute { position = new int2(cameFromNode.x, cameFromNode.y) });
                 currentNode = cameFromNode;
             }
         }
 
-        private NativeList<PathNode> getEligibleNeighbours(PathNode centerNode, NativeArray<PathNode> pathNodes, int2 gridSize) {
+        private void updatePathing(NativeList<PathNode> closedList) {
+            setPathBuffer(closedList, pathRoute);
+            routeFollow[entity] = new PathfindingRouteFollow { routeIndex = pathRoute.Length - 1 };
+        }
+
+        private NativeList<PathNode> getEligibleNeighbours(PathNode centerNode, int2 gridSize) {
             NativeArray<int2> adjacentOffsetArray = new NativeArray<int2>(4, Allocator.Temp);
             adjacentOffsetArray[0] = new int2(-1, 0); // Left
             adjacentOffsetArray[1] = new int2(+1, 0); // Right
@@ -192,7 +223,7 @@ public class PathfindingSystem : ComponentSystem {
         }
 
         // will remove the node from nodes list
-        private PathNode getNodeWithLowestFCost(ref NativeList<PathNode> nodes) {
+        private PathNode popNodeWithLowestFCost(ref NativeList<PathNode> nodes) {
             int lowest = 0;
 
             for (int i = 1; i < nodes.Length; i++) {
@@ -207,6 +238,15 @@ public class PathfindingSystem : ComponentSystem {
             return cheapestNode;
         }
 
+        private void updateNodeInList(ref NativeList<PathNode> list, PathNode newNode) {
+            for(int i = 0; i < list.Length; i++) {
+                if (list[i].x == newNode.x && list[i].y == newNode.y) {
+                    list[i] = newNode;
+                    break;
+                }
+            }
+        }
+
         private bool containsNode(NativeList<PathNode> list, PathNode node) {
             for (int i = 0; i < list.Length; i++) {
                 if (list[i].x == node.x && list[i].y == node.y) {
@@ -216,9 +256,9 @@ public class PathfindingSystem : ComponentSystem {
             return false;
         }
 
-        private PathNode getNodeInList(NativeList<PathNode> list, int nodeIndex) {
+        private PathNode getNodeInList(NativeList<PathNode> list, int2 nodePosition) {
             for (int i = 0; i < list.Length; i++) {
-                if (getNodeIndex(list[i].x, list[i].y) == nodeIndex) {
+                if (list[i].toInt2().Equals(nodePosition)) {
                     return list[i];
                 }
             }
@@ -236,13 +276,41 @@ public class PathfindingSystem : ComponentSystem {
         private int getNodeIndex(int x, int y) {
             return x + y * gridSize.x;
         }
-    }
-
-    private static int CalculateDistanceCost(int2 aPosition, int2 bPosition) {
-        int xDistance = math.abs(aPosition.x - bPosition.x);
-        int yDistance = math.abs(aPosition.y - bPosition.y);
-        int remaining = math.abs(xDistance - yDistance);
-        return 14 * math.min(xDistance, yDistance) + 10 * remaining;
+        private int2 getPositionFromIndex(int index) {
+            return new int2(index % gridSize.x, index / gridSize.x);
+        }
+        private int CalculateHeuristicCost(int2 positionA) {
+            if (pathfindingType == PathfindingType.ToSpot) {
+                return CalculateDistanceCost(positionA, new int2(positionEnd.x, positionEnd.y));
+            } else {
+                int shortestDistance = CalculateDistanceCost(positionA, targets[0]);
+                for (int i = 1; i < targets.Length; i++) {
+                    int distance = CalculateDistanceCost(positionA, targets[i]);
+                    if (distance < shortestDistance)
+                        shortestDistance = distance;
+                }
+                return shortestDistance;
+            }
+        }
+        private int CalculateDistanceCost(int2 positionA, int2 positionB) {
+            int xDistance = math.abs(positionA.x - positionB.x);
+            int yDistance = math.abs(positionA.y - positionB.y);
+            int remaining = math.abs(xDistance - yDistance);
+            return DiagonalCost * math.min(xDistance, yDistance) + AdjacentCost * remaining;
+        }
+        private bool successfullyReachedTarget(int2 position) {
+            if (pathfindingType == PathfindingType.ToSpot) {
+                return position.Equals(positionEnd);
+            } else {
+                for  (int i = 0; i < targets.Length; i++) {
+                    int xDistance = math.abs(position.x - targets[i].x);
+                    int yDistance = math.abs(position.y - targets[i].y);
+                    if (yDistance <= 1 && xDistance <= 1)
+                        return true;
+                }
+                return false;
+            }
+        }
     }
 
     public struct PathNode {
@@ -262,6 +330,10 @@ public class PathfindingSystem : ComponentSystem {
 
         public void SetWalkable(bool walkable) {
             this.walkable = walkable;
+        }
+
+        public int2 toInt2() {
+            return new int2(x, y);
         }
     }
 }

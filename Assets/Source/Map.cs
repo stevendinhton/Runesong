@@ -17,6 +17,16 @@ namespace Map {
         public ushort materialSurface; // type of tile on the surface (wood floor, stone floor, etc.)
 
         public int healthSurface;
+
+        public PathNode GetBasicPathNode() {
+            return new PathNode {
+                x = (ushort)locationX,
+                y = (ushort)locationY,
+                walkable = traversable,
+                cameFromNodeIndex = -1,
+                gCost = int.MaxValue
+            };
+        }
     }
     
     public struct MapRegion {
@@ -29,7 +39,7 @@ namespace Map {
         public int locationY; 
         public int locationX;
 
-        private int GetTileIndex(int x, int y) {
+        public int GetTileIndex(int x, int y) {
             return (y - locationY) * regionSize + x - locationX;
         }
 
@@ -48,7 +58,7 @@ namespace Map {
         public int regionSize;
         public int mapWidthByRegions;
         public int mapHeightByRegions;
-        public int MapItem;
+        public MapItem[] MapItems;
 
         private int GetRegionIndex(int x, int y) {
             int regionLocationX = x / regionSize;
@@ -73,7 +83,10 @@ namespace Map {
             return GetMapRegionAt(x, y).GetMapTileAt(x, y);
         }
 
-        public void SetTileAt(MapTile newTile, int x, int y) {
+        public void SetTile(MapTile newTile) {
+            int x = newTile.locationX;
+            int y = newTile.locationY;
+
             MapRegion region = GetMapRegionAt(x, y);
             region.SetTileAt(newTile, x, y);
 
@@ -86,14 +99,7 @@ namespace Map {
             // set up all path nodes
             for (int x = 0; x < regionSize; x++) {
                 for (int y = 0; y < regionSize; y++) {
-                    PathNode pathNode = new PathNode {
-                        x = (ushort)x,
-                        y = (ushort)y,
-                        walkable = GetMapTileAt(x, y).traversable,
-                        cameFromNodeIndex = -1
-                    };
-
-                    pathNodes[x + y * regionSize] = pathNode;
+                    pathNodes[x + y * regionSize] = GetMapTileAt(x, y).GetBasicPathNode();
                 }
             }
             return pathNodes;

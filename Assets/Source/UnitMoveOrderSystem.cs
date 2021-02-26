@@ -8,7 +8,7 @@ using Unity.Mathematics;
 public class UnitMoveOrderSystem : ComponentSystem {
     protected override void OnUpdate() {
         if (Input.GetMouseButtonDown(0)) {
-            Debug.Log("Mouse Button Down");
+            Debug.Log("Left Mouse Button Down");
 
             Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             Debug.Log(string.Format("Mouse click at [X: {0} Y: {0}]", pos.x, pos.y));
@@ -25,7 +25,7 @@ public class UnitMoveOrderSystem : ComponentSystem {
             });
         }
 
-        
+        /*
         int gridSize = WorldManager.MapWorld.regionSize;
         System.Random rnd = new System.Random();
         
@@ -41,6 +41,6 @@ public class UnitMoveOrderSystem : ComponentSystem {
                     endPosition = new int2(rnd.Next(0, gridSize - 1), rnd.Next(0, gridSize - 1))
                 });
             }
-        });
+        });*/
     }
 }
