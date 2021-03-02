@@ -5,5 +5,37 @@ using Unity.Entities;
 
 namespace Creature {
     
-    // public struct 
+    public struct CreatureActive : IComponentData
+    {
+
+    }
+
+    public struct Creature
+    {
+        Name name;
+        Health health;
+        Hunger hunger;
+
+        readonly int id;
+        bool alive;
+    }
+
+    public struct Health
+    {
+        int maxHealth;
+        int currentHealth;
+    }
+
+    public struct Hunger
+    {
+        int maxHunger;
+        int currentHunger;
+    }
+
+    public struct Name
+    {
+        string firstName;
+        string lastName;
+        string nickName;
+    }
 }
