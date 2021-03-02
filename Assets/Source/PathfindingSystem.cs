@@ -25,7 +25,7 @@ public class PathfindingSystem : ComponentSystem {
 
         Entities.ForEach((Entity entity, DynamicBuffer<PathfindingRoute> pathRoute, ref PathfindingParams pathfindingParams) => {
             PathFinderJob pathfinderJob = new PathFinderJob {
-                pathfindingType = PathfindingType.ToAdjacent,
+                pathfindingType = PathfindingType.ToSpot,
                 positionStart = pathfindingParams.startPosition,
                 positionEnd = pathfindingParams.endPosition,
                 gridSize = gridSize,

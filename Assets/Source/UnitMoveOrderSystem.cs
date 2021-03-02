@@ -7,13 +7,16 @@ using Unity.Mathematics;
 
 public class UnitMoveOrderSystem : ComponentSystem {
     protected override void OnUpdate() {
-        if (Input.GetMouseButtonDown(0)) {
-            Debug.Log("Left Mouse Button Down");
+        if (Input.GetMouseButtonDown(1)) {
+            Debug.Log("Right Mouse Button Down");
 
             Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             Debug.Log(string.Format("Mouse click at [X: {0} Y: {0}]", pos.x, pos.y));
 
-            Entities.ForEach((Entity entity, ref Translation translation) => {
+            Entities.ForEach((Entity entity, ref Translation translation, ref PathfindingRouteFollow follow, ref SelectableElement selectable) => {
+                if (!selectable.isSelected)
+                    return;
+
                 int startX = (int)(translation.Value.x);
                 int startY = (int)(translation.Value.y);
 

@@ -5,25 +5,29 @@ using Map;
 using UnityEngine.Tilemaps;
 using Unity.Mathematics;
 using Unity.Collections;
+using Unity.Entities;
+using Unity.Jobs;
 using static PathfindingSystem;
 
 public class WorldManager : MonoBehaviour {
     
     public static MapWorld MapWorld { private set; get; }
-    public static NativeArray<PathNode> PathNodesNA { private set; get; } 
+    public static NativeArray<PathNode> PathNodesNA { private set; get; }
+    public static Transform SelectionArea { private set; get;  }
 
     public int regionSize;
     public int worldSizeByRegions;
     public GameObject tilemapGameObject;
     public TileBase[] tile;
     public int2[] walls;
+    public Transform selectionArea;
 
-    private Tile _baseTile;
     private Tilemap tilemap;
 
     // Start is called before the first frame update
     void Start() {
         tilemap = tilemapGameObject.GetComponent<Tilemap>();
+        SelectionArea = selectionArea;
 
         float startTime = Time.realtimeSinceStartup;
         CreateWorld();
@@ -38,8 +42,8 @@ public class WorldManager : MonoBehaviour {
 
     // Update is called once per frame
     void Update() {
-        if (Input.GetMouseButtonDown(1)) {
-            Debug.Log("Right Mouse Button Down");
+        if (Input.GetMouseButtonDown(2)) {
+            Debug.Log("Middle Mouse Button Down");
 
             Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             Debug.Log(string.Format("Mouse click at [X: {0} Y: {0}]", pos.x, pos.y));
