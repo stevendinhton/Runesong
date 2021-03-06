@@ -19,8 +19,13 @@ public class PathfindingRouteFollowSystem : ComponentSystem {
 
                 if (math.distance(translation.Value, targetPosition) < .1f) {
                     pathfindingRouteFollow.routeIndex--;
+                    updatePathUIElements();
                 }
             }
         });
+    }
+
+    private void updatePathUIElements() {
+
     }
 }
