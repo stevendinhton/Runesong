@@ -63,6 +63,14 @@ public class InputManager : ComponentSystem
 
                 selectable.isSelected = withinSelection;
             });
+
+            Entities.ForEach((Entity entity, ref TogglableSprite togglableSprite, ref Parent parent) => {
+                if (EntityManager.GetComponentData<SelectableElement>(parent.Value).isSelected) {
+                    EntityManager.RemoveComponent<Disabled>(entity);
+                } else {
+                    EntityManager.AddComponent<Disabled>(entity);
+                }
+            });
         }
     }
 }
