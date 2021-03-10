@@ -3,6 +3,6 @@ using UnityEngine;
 using Unity.Entities;
 
 [GenerateAuthoringComponent]
-public struct Hunger : IComponentData {
+public struct NeedFood : IComponentData {
     int foodLevel;
 }

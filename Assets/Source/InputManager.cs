@@ -13,6 +13,17 @@ public class InputManager : ComponentSystem
     protected override void OnUpdate() {
         handleSelectionBox();
         handleMoveOrders();
+
+        if (Input.GetKeyDown(KeyCode.Space)) {
+            Entities.ForEach((Entity entity, ref Translation translation, ref SelectableElement selectable) => {
+                if (selectable.isSelected) {
+                    Entity newEntity = EntityManager.Instantiate(entity);
+                    Translation newTrans = EntityManager.GetComponentData<Translation>(newEntity);
+                    newTrans.Value.x += 1;
+                    EntityManager.AddComponentData(newEntity, newTrans);
+                }
+            });
+        }
     }
 
     private void handleMoveOrders() {
