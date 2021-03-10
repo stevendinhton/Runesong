@@ -16,7 +16,7 @@ namespace Creature {
         Health health;
         Hunger hunger;
 
-        readonly int id;
+        int id;
         bool alive;
     }
 
