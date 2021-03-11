@@ -1,7 +1,6 @@
 ﻿using Unity.Entities;
 
 [GenerateAuthoringComponent]
-public struct NeedRest : IComponentData
-{
-    int restLevel;
+public struct NeedRest : IComponentData {
+    public int restLevel;
 }

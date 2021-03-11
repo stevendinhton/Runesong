@@ -1,9 +1,6 @@
-﻿using System.Collections;
-using UnityEngine;
-using Unity.Entities;
+﻿using Unity.Entities;
 
 [GenerateAuthoringComponent]
-public struct WarmthNeed : IComponentData
-{
-    int warmthLevel;
+public struct NeedWarmth : IComponentData {
+    public int warmthLevel;
 }

@@ -38,12 +38,14 @@ public class WorldManager : MonoBehaviour {
         Debug.Log("Time(SetTileMap): " + ((Time.realtimeSinceStartup - startTime) * 1000f));
         SetPathNodes();
         Debug.Log("Time(SetPathNodes): " + ((Time.realtimeSinceStartup - startTime) * 1000f));
+
+        Application.targetFrameRate = 20;
     }
 
     // Update is called once per frame
     void Update() {
-        if (Input.GetMouseButtonDown(2)) {
-            Debug.Log("Middle Mouse Button Down");
+        if (Input.GetKeyDown(KeyCode.E)) {
+            Debug.Log("E Button Down");
 
             Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             Debug.Log(string.Format("Mouse click at [X: {0} Y: {0}]", pos.x, pos.y));

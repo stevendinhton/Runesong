@@ -9,10 +9,13 @@ using Unity.Collections;
 public class InputManager : ComponentSystem
 {
     private float3 dragStartPosition;
+    private Vector3 cameraStartPosition;
+    private Vector3 lastMousePosition;
 
     protected override void OnUpdate() {
         handleSelectionBox();
         handleMoveOrders();
+        handleCameraControl();
 
         if (Input.GetKeyDown(KeyCode.Space)) {
             Entities.ForEach((Entity entity, ref Translation translation, ref SelectableElement selectable) => {
@@ -23,6 +26,21 @@ public class InputManager : ComponentSystem
                     EntityManager.AddComponentData(newEntity, newTrans);
                 }
             });
+        }
+    }
+
+    public void handleCameraControl() {
+        if (Input.GetMouseButtonDown(2)) {
+            cameraStartPosition = Input.mousePosition;
+        }
+        if (Input.GetMouseButton(2)) {
+
+            Vector3 mousePosition = Input.mousePosition;
+            Vector3 difference = cameraStartPosition - mousePosition;
+
+            //if ((ControllableCamera.instance.transform.position - difference).magnitude > 1) {
+                ControllableCamera.instance.transform.position = difference;
+            //}
         }
     }
 

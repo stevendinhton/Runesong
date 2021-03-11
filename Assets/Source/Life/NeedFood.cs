@@ -1,8 +1,6 @@
-﻿using System.Collections;
-using UnityEngine;
-using Unity.Entities;
+﻿using Unity.Entities;
 
 [GenerateAuthoringComponent]
 public struct NeedFood : IComponentData {
-    int foodLevel;
+    public int foodLevel;
 }
