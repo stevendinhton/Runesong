@@ -38,8 +38,6 @@ public class WorldManager : MonoBehaviour {
         Debug.Log("Time(SetTileMap): " + ((Time.realtimeSinceStartup - startTime) * 1000f));
         SetPathNodes();
         Debug.Log("Time(SetPathNodes): " + ((Time.realtimeSinceStartup - startTime) * 1000f));
-
-        Application.targetFrameRate = 20;
     }
 
     // Update is called once per frame

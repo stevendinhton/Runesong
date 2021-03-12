@@ -8,9 +8,12 @@ using Unity.Collections;
 
 public class InputManager : ComponentSystem
 {
-    private float3 dragStartPosition;
-    private Vector3 cameraStartPosition;
-    private Vector3 lastMousePosition;
+    private float3 selectionDragStartPos;
+    private Vector3 cameraDragStartPos;
+    private float3 cameraObjectStartPos;
+
+    private float3 dragSpeed = new Vector3(0.01f, 0.01f, 0.01f);
+    private float zoomSpeed = 0.25f;
 
     protected override void OnUpdate() {
         handleSelectionBox();
@@ -31,16 +34,20 @@ public class InputManager : ComponentSystem
 
     public void handleCameraControl() {
         if (Input.GetMouseButtonDown(2)) {
-            cameraStartPosition = Input.mousePosition;
+            cameraDragStartPos = Input.mousePosition;
+            cameraObjectStartPos = ControllableCamera.instance.transform.position;
         }
         if (Input.GetMouseButton(2)) {
-
             Vector3 mousePosition = Input.mousePosition;
-            Vector3 difference = cameraStartPosition - mousePosition;
+            Vector3 difference = cameraDragStartPos - mousePosition;
+            ControllableCamera.instance.transform.position = cameraObjectStartPos + difference * dragSpeed;
+        }
 
-            //if ((ControllableCamera.instance.transform.position - difference).magnitude > 1) {
-                ControllableCamera.instance.transform.position = difference;
-            //}
+        if (Input.mouseScrollDelta.y < 0) {
+            ControllableCamera.instance.GetComponent<Camera>().orthographicSize += zoomSpeed;
+        }
+        if (Input.mouseScrollDelta.y > 0) {
+            ControllableCamera.instance.GetComponent<Camera>().orthographicSize -= zoomSpeed;
         }
     }
 
@@ -63,24 +70,25 @@ public class InputManager : ComponentSystem
     private void handleSelectionBox() {
         if (Input.GetMouseButtonDown(0)) {
             // Begin mouse down
-            dragStartPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            selectionDragStartPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             WorldManager.SelectionArea.gameObject.SetActive(true);
-            WorldManager.SelectionArea.position = dragStartPosition;
+            WorldManager.SelectionArea.position = selectionDragStartPos;
+            Debug.Log(selectionDragStartPos);
         }
         if (Input.GetMouseButton(0)) {
             // Mouse held down
             float3 selectionAreaSize = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            WorldManager.SelectionArea.localScale = selectionAreaSize - dragStartPosition;
+            WorldManager.SelectionArea.localScale = selectionAreaSize - selectionDragStartPos;
         }
         if (Input.GetMouseButtonUp(0)) {
             // Mouse released
             WorldManager.SelectionArea.gameObject.SetActive(false);
             float3 endPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
-            float leftBoundary = math.min(endPosition.x, dragStartPosition.x);
-            float rightBoundary = math.max(endPosition.x, dragStartPosition.x);
-            float downBoundary = math.min(endPosition.y, dragStartPosition.y);
-            float upBoundary = math.max(endPosition.y, dragStartPosition.y);
+            float leftBoundary = math.min(endPosition.x, selectionDragStartPos.x);
+            float rightBoundary = math.max(endPosition.x, selectionDragStartPos.x);
+            float downBoundary = math.min(endPosition.y, selectionDragStartPos.y);
+            float upBoundary = math.max(endPosition.y, selectionDragStartPos.y);
 
             Entities.ForEach((Entity entity, ref Translation translation, ref SelectableElement selectable) => {
                 float3 entityPosition = translation.Value;
