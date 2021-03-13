@@ -13,7 +13,7 @@ public class InputManager : ComponentSystem
     private float3 cameraObjectStartPos;
 
     private float3 dragSpeed = new Vector3(0.01f, 0.01f, 0.01f);
-    private float zoomSpeed = 0.25f;
+    private readonly float zoomSpeed = 0.25f;
 
     protected override void OnUpdate() {
         handleSelectionBox();
@@ -73,7 +73,6 @@ public class InputManager : ComponentSystem
             selectionDragStartPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             WorldManager.SelectionArea.gameObject.SetActive(true);
             WorldManager.SelectionArea.position = selectionDragStartPos;
-            Debug.Log(selectionDragStartPos);
         }
         if (Input.GetMouseButton(0)) {
             // Mouse held down

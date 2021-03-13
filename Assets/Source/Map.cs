@@ -58,7 +58,7 @@ namespace Map {
         public int regionSize;
         public int mapWidthByRegions;
         public int mapHeightByRegions;
-        public MapItem[] MapItems;
+        public List<MapGrowth> mapGrowths;
 
         private int GetRegionIndex(int x, int y) {
             int regionLocationX = x / regionSize;
@@ -83,6 +83,16 @@ namespace Map {
             return GetMapRegionAt(x, y).GetMapTileAt(x, y);
         }
 
+        public List<MapGrowth> GetMapGrowthsAt(int x, int y) {
+            List<MapGrowth> foundGrowths = new List<MapGrowth>();
+            for(int i = 0; i < mapGrowths.Count; i++) {
+                if (mapGrowths[i].locationX == x && mapGrowths[i].locationY == y) {
+                    foundGrowths.Add(mapGrowths[i]);
+                };
+            }
+            return foundGrowths;
+        }
+
         public void SetTile(MapTile newTile) {
             int x = newTile.locationX;
             int y = newTile.locationY;
@@ -91,6 +101,14 @@ namespace Map {
             region.SetTileAt(newTile, x, y);
 
             mapRegions[GetRegionIndex(x, y)] = region;
+        }
+
+        public void SetGrowth(MapGrowth newGrowth) {
+            for (int i = 0; i < mapGrowths.Count; i++) {
+                if (mapGrowths[i].locationX == newGrowth.locationX && mapGrowths[i].locationY == newGrowth.locationY) {
+                    mapGrowths[i] = newGrowth;
+                };
+            }
         }
 
         public PathNode[] GetPathNodes() {
@@ -106,12 +124,11 @@ namespace Map {
         }
     }
 
-    public struct MapItem
-    {
+    public struct MapGrowth {
         public int locationX;
         public int locationY;
 
-        public ushort itemNameCode;
+        public ushort growthCode;
         public uint quantity;
     }
 }

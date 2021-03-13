@@ -17,16 +17,15 @@ public class WorldManager : MonoBehaviour {
 
     public int regionSize;
     public int worldSizeByRegions;
-    public GameObject tilemapGameObject;
-    public TileBase[] tile;
+    public Tilemap groundTilemap;
+    public Tilemap growthTilemap;
+    public TileBase[] tileForGround;
+    public TileBase[] tileForGrowth;
     public int2[] walls;
     public Transform selectionArea;
 
-    private Tilemap tilemap;
-
     // Start is called before the first frame update
     void Start() {
-        tilemap = tilemapGameObject.GetComponent<Tilemap>();
         SelectionArea = selectionArea;
 
         float startTime = Time.realtimeSinceStartup;
@@ -34,8 +33,9 @@ public class WorldManager : MonoBehaviour {
         Debug.Log("Time(CreateWorld): " + ((Time.realtimeSinceStartup - startTime) * 1000f));
         SetWalls();
         Debug.Log("Time(SetWalls): " + ((Time.realtimeSinceStartup - startTime) * 1000f));
-        SetTileMap();
-        Debug.Log("Time(SetTileMap): " + ((Time.realtimeSinceStartup - startTime) * 1000f));
+        SetGroundTilemap();
+        Debug.Log("Time(SetGroundTilemap): " + ((Time.realtimeSinceStartup - startTime) * 1000f));
+        SetGrowthTilemap();
         SetPathNodes();
         Debug.Log("Time(SetPathNodes): " + ((Time.realtimeSinceStartup - startTime) * 1000f));
     }
@@ -54,21 +54,43 @@ public class WorldManager : MonoBehaviour {
             clickedTile.materialSurface = clickedTile.traversable ? (ushort) 1 : (ushort) 2;
             Debug.Log("Time(1): " + ((Time.realtimeSinceStartup - startTime) * 1000f));
 
-            UpdateTile(clickedTile);
+            UpdateGroundTile(clickedTile);
+        }
+
+        if (Input.GetKeyDown(KeyCode.R)) {
+            Debug.Log("R Button Down");
+
+            Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            Debug.Log(string.Format("Mouse click at [X: {0} Y: {0}]", pos.x, pos.y));
+
+            UpdateGrowthTile(new MapGrowth {
+                locationX = (int) pos.x,
+                locationY = (int) pos.y,
+                quantity = 1,
+                growthCode = 0
+            });
         }
     }
 
-    public void UpdateTile(MapTile newTile) {
+    private void UpdateGroundTile(MapTile newTile) {
         float startTime = Time.realtimeSinceStartup;
-        int x = newTile.locationX;
-        int y = newTile.locationY;
         MapWorld.SetTile(newTile);
         Debug.Log("Time(SetTile): " + ((Time.realtimeSinceStartup - startTime) * 1000f));
 
-        UpdateTileMap(newTile);
+        UpdateGroundTilemap(newTile);
         Debug.Log("Time(UpdateTileMap): " + ((Time.realtimeSinceStartup - startTime) * 1000f));
-        UpdatePathNodes();
-        Debug.Log("Time(UpdatePathNodes): " + ((Time.realtimeSinceStartup - startTime) * 1000f));
+        PathNodesNA.Dispose();
+        SetPathNodes();
+        Debug.Log("Time(SetPathNodes): " + ((Time.realtimeSinceStartup - startTime) * 1000f));
+    }
+
+    private void UpdateGrowthTile(MapGrowth newGrowth) {
+        float startTime = Time.realtimeSinceStartup;
+        MapWorld.SetGrowth(newGrowth);
+        Debug.Log("Time(SetTile): " + ((Time.realtimeSinceStartup - startTime) * 1000f));
+
+        UpdateGrowthTilemap(newGrowth);
+        Debug.Log("Time(UpdateGrowthTilemap): " + ((Time.realtimeSinceStartup - startTime) * 1000f));
     }
 
     private MapTile[] GetDefaultMapTiles(int regionSize) {
@@ -78,9 +100,9 @@ public class WorldManager : MonoBehaviour {
         
         for (int i = 0; i < numTiles; i++) {
             MapTile baseTile = new MapTile();
-            baseTile.traversable = true; // wallIndices.Contains(i)
+            baseTile.traversable = true;
             baseTile.materialGround = 0;
-            baseTile.materialSurface = 1; // wallIndices.Contains(i) ? (ushort)2 : (ushort)1
+            baseTile.materialSurface = 1;
             baseTile.locationX = i % regionSize;
             baseTile.locationY = i / regionSize;
 
@@ -106,7 +128,8 @@ public class WorldManager : MonoBehaviour {
             mapRegions = mapRegions,
             regionSize = regionSize,
             mapHeightByRegions = 1,
-            mapWidthByRegions = 1
+            mapWidthByRegions = 1,
+            mapGrowths = new List<MapGrowth>()
         };
     }
 
@@ -120,12 +143,14 @@ public class WorldManager : MonoBehaviour {
         }
     }
 
-    private void UpdateTileMap(MapTile newTile) {
-        tilemap.SetTile(new Vector3Int(newTile.locationX, newTile.locationY, 0), tile[newTile.materialSurface]);
+    private void UpdateGroundTilemap(MapTile newTile) {
+        groundTilemap.SetTile(new Vector3Int(newTile.locationX, newTile.locationY, 0), tileForGround[newTile.materialSurface]);
+    }
+    private void UpdateGrowthTilemap(MapGrowth newGrowth) {
+        growthTilemap.SetTile(new Vector3Int(newGrowth.locationX, newGrowth.locationY, 0), tileForGrowth[newGrowth.growthCode]);
     }
 
-
-    private void SetTileMap() {
+    private void SetGroundTilemap() {
         Vector3Int[] locations = new Vector3Int[MapWorld.GetTotalNumMapTiles()];
         TileBase[] tileArray = new TileBase[MapWorld.GetTotalNumMapTiles()];
         
@@ -134,19 +159,26 @@ public class WorldManager : MonoBehaviour {
 
             for (int j = 0; j < mapTilesInRegion.Length; j++) {
                 locations[i * mapTilesInRegion.Length + j] = new Vector3Int(mapTilesInRegion[j].locationX, mapTilesInRegion[j].locationY, 0);
-                tileArray[i * mapTilesInRegion.Length + j] = tile[mapTilesInRegion[j].materialSurface];
+                tileArray[i * mapTilesInRegion.Length + j] = tileForGround[mapTilesInRegion[j].materialSurface];
             }
         }
 
-        tilemap.GetComponent<Tilemap>().SetTiles(locations, tileArray);
+        groundTilemap.GetComponent<Tilemap>().SetTiles(locations, tileArray);
+    }
+
+    private void SetGrowthTilemap() {
+        Vector3Int[] locations = new Vector3Int[MapWorld.mapGrowths.Count];
+        TileBase[] tileArray = new TileBase[MapWorld.mapGrowths.Count];
+
+        for (int i = 0; i < MapWorld.mapGrowths.Count; i++) {
+            locations[i] = new Vector3Int(MapWorld.mapGrowths[i].locationX, MapWorld.mapGrowths[i].locationY, 0);
+            tileArray[i] = tileForGrowth[MapWorld.mapGrowths[i].growthCode];
+        }
+
+        groundTilemap.GetComponent<Tilemap>().SetTiles(locations, tileArray);
     }
 
     private void SetPathNodes() {
         PathNodesNA = new NativeArray<PathNode>(MapWorld.GetPathNodes(), Allocator.Persistent);
-    }
-
-    private void UpdatePathNodes() {
-        PathNodesNA.Dispose();
-        SetPathNodes();
     }
 }
