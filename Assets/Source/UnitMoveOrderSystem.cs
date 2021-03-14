@@ -4,6 +4,7 @@ using UnityEngine;
 using Unity.Entities;
 using Unity.Transforms;
 using Unity.Mathematics;
+using Pathfinding;
 
 public class UnitMoveOrderSystem : ComponentSystem {
 

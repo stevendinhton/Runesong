@@ -92,6 +92,15 @@ namespace Map {
             }
             return foundGrowths;
         }
+        public List<MapGrowth> GetMapGrowths(int growthCode) {
+            List<MapGrowth> foundGrowths = new List<MapGrowth>();
+            for (int i = 0; i < mapGrowths.Count; i++) {
+                if (mapGrowths[i].growthCode == growthCode) {
+                    foundGrowths.Add(mapGrowths[i]);
+                };
+            }
+            return foundGrowths;
+        }
 
         public void SetTile(MapTile newTile) {
             int x = newTile.locationX;
@@ -104,10 +113,15 @@ namespace Map {
         }
 
         public void SetGrowth(MapGrowth newGrowth) {
+            bool found = false;
             for (int i = 0; i < mapGrowths.Count; i++) {
                 if (mapGrowths[i].locationX == newGrowth.locationX && mapGrowths[i].locationY == newGrowth.locationY) {
                     mapGrowths[i] = newGrowth;
+                    found = true;
                 };
+            }
+            if(!found) {
+                mapGrowths.Add(newGrowth);
             }
         }
 

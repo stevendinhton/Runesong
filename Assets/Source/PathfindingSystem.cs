@@ -9,6 +9,7 @@ using Unity.Mathematics;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Collections.LowLevel.Unsafe;
+using Pathfinding;
 using Map;
 
 public class PathfindingSystem : ComponentSystem {
@@ -16,16 +17,20 @@ public class PathfindingSystem : ComponentSystem {
     private const int DiagonalCost = 14;
     private const int AdjacentCost = 10;
 
-    enum PathfindingType { ToSpot, ToAdjacent };
-
     protected override void OnUpdate() {
         int2 gridSize = new int2(WorldManager.MapWorld.regionSize, WorldManager.MapWorld.regionSize);
 
         NativeList<JobHandle> jobHandles = new NativeList<JobHandle>(Allocator.Temp);
 
         Entities.ForEach((Entity entity, DynamicBuffer<PathfindingRoute> pathRoute, ref PathfindingParams pathfindingParams) => {
+            List<MapGrowth> mapGrowths = WorldManager.MapWorld.GetMapGrowths(pathfindingParams.growthCode);
+            NativeArray<int2> targetLocations = new NativeArray<int2>(mapGrowths.Count, Allocator.TempJob);
+            for (int i = 0; i < mapGrowths.Count; i++) {
+                targetLocations[i] = new int2(mapGrowths[i].locationX, mapGrowths[i].locationY);
+            }
+
             PathFinderJob pathfinderJob = new PathFinderJob {
-                pathfindingType = PathfindingType.ToSpot,
+                pathfindingType = pathfindingParams.pathfindingType,
                 positionStart = pathfindingParams.startPosition,
                 positionEnd = pathfindingParams.endPosition,
                 gridSize = gridSize,
@@ -33,7 +38,7 @@ public class PathfindingSystem : ComponentSystem {
                 routeFollow = GetComponentDataFromEntity<PathfindingRouteFollow>(),
                 pathRoute = pathRoute,
                 pathNodes = WorldManager.PathNodesNA,
-                targets = new NativeArray<int2>(0, Allocator.TempJob)
+                targets = targetLocations
             };
 
             jobHandles.Add(pathfinderJob.Schedule());

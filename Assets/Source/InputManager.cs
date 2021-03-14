@@ -5,6 +5,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using Unity.Jobs;
 using Unity.Collections;
+using Pathfinding;
 
 public class InputManager : ComponentSystem
 {
@@ -18,6 +19,7 @@ public class InputManager : ComponentSystem
     protected override void OnUpdate() {
         handleSelectionBox();
         handleMoveOrders();
+        handleFindOrders(0);
         handleCameraControl();
 
         if (Input.GetKeyDown(KeyCode.Space)) {
@@ -62,6 +64,20 @@ public class InputManager : ComponentSystem
                 EntityManager.AddComponentData(entity, new PathfindingParams {
                     startPosition = new int2((int)translation.Value.x, (int)translation.Value.y),
                     endPosition = new int2((int)targetPosition.x, (int)targetPosition.y)
+                });
+            });
+        }
+    }
+    private void handleFindOrders(int growthCode) {
+        if (Input.GetKeyDown(KeyCode.F)) {
+            Entities.ForEach((Entity entity, ref Translation translation, ref PathfindingRouteFollow follow, ref SelectableElement selectable) => {
+                if (!selectable.isSelected)
+                    return;
+
+                EntityManager.AddComponentData(entity, new PathfindingParams {
+                    startPosition = new int2((int)translation.Value.x, (int)translation.Value.y),
+                    pathfindingType = PathfindingType.ToAdjacent,
+                    growthCode = growthCode
                 });
             });
         }
