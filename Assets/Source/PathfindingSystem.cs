@@ -16,6 +16,8 @@ public class PathfindingSystem : ComponentSystem {
 
     private const int DiagonalCost = 14;
     private const int AdjacentCost = 10;
+    private static readonly int2[] AdjacentOffsets = { new int2(1, 0), new int2(0, 1), new int2(-1, 0), new int2(0, -1) };
+    private static readonly int2[] DiagonalOffsets = { new int2(1, 1), new int2(1, -1), new int2(-1, 1), new int2(-1, -1) };
 
     protected override void OnUpdate() {
         int2 gridSize = new int2(WorldManager.MapWorld.regionSize, WorldManager.MapWorld.regionSize);
@@ -24,10 +26,7 @@ public class PathfindingSystem : ComponentSystem {
 
         Entities.ForEach((Entity entity, DynamicBuffer<PathfindingRoute> pathRoute, ref PathfindingParams pathfindingParams) => {
             List<MapGrowth> mapGrowths = WorldManager.MapWorld.GetMapGrowths(pathfindingParams.growthCode);
-            NativeArray<int2> targetLocations = new NativeArray<int2>(mapGrowths.Count, Allocator.TempJob);
-            for (int i = 0; i < mapGrowths.Count; i++) {
-                targetLocations[i] = new int2(mapGrowths[i].locationX, mapGrowths[i].locationY);
-            }
+            NativeArray<int2> targetLocations = new NativeArray<int2>(GetAllTargetsFromGrowth(mapGrowths), Allocator.TempJob);
 
             PathFinderJob pathfinderJob = new PathFinderJob {
                 pathfindingType = pathfindingParams.pathfindingType,
@@ -79,7 +78,7 @@ public class PathfindingSystem : ComponentSystem {
                 return;
             }
 
-            if (successfullyReachedTarget(positionStart)) {
+            if (SuccessfullyReachedTarget(positionStart)) {
                 pathRoute.Clear();
                 routeFollow[entity] = new PathfindingRouteFollow { routeIndex = -1 };
                 return;
@@ -101,7 +100,7 @@ public class PathfindingSystem : ComponentSystem {
                 PathNode currentNode = popNodeWithLowestFCost(ref openList);
                 closedList.Add(currentNode);
 
-                if (successfullyReachedTarget(currentNode.toInt2())) {
+                if (SuccessfullyReachedTarget(currentNode.toInt2())) {
                     foundPath = true;
                     break;
                 }
@@ -171,23 +170,12 @@ public class PathfindingSystem : ComponentSystem {
         }
 
         private NativeList<PathNode> getEligibleNeighbours(PathNode centerNode, int2 gridSize) {
-            NativeArray<int2> adjacentOffsetArray = new NativeArray<int2>(4, Allocator.Temp);
-            adjacentOffsetArray[0] = new int2(-1, 0); // Left
-            adjacentOffsetArray[1] = new int2(+1, 0); // Right
-            adjacentOffsetArray[2] = new int2(0, +1); // Up
-            adjacentOffsetArray[3] = new int2(0, -1); // Down
-
-            NativeArray<int2> diagonalOffsetArray = new NativeArray<int2>(4, Allocator.Temp);
-            diagonalOffsetArray[0] = new int2(+1, +1); // Top Right
-            diagonalOffsetArray[1] = new int2(-1, +1); // Top Left
-            diagonalOffsetArray[2] = new int2(+1, -1); // Bottom Right
-            diagonalOffsetArray[3] = new int2(-1, -1); // Bottom Left 
 
             NativeList<PathNode> eligibleNeighbours = new NativeList<PathNode>(Allocator.Temp);
 
             // iterate through all neighbours
-            for (int i = 0; i < adjacentOffsetArray.Length; i++) {
-                int2 offset = adjacentOffsetArray[i];
+            for (int i = 0; i < AdjacentOffsets.Length; i++) {
+                int2 offset = AdjacentOffsets[i];
                 int2 adjacentPosition = new int2(centerNode.x + offset.x, centerNode.y + offset.y);
 
                 if (!IsPositionInsideGrid(adjacentPosition, gridSize)) {
@@ -201,8 +189,8 @@ public class PathfindingSystem : ComponentSystem {
                 }
             }
 
-            for (int i = 0; i < diagonalOffsetArray.Length; i++) {
-                int2 offset = diagonalOffsetArray[i];
+            for (int i = 0; i < DiagonalOffsets.Length; i++) {
+                int2 offset = DiagonalOffsets[i];
                 int2 diagonalPosition = new int2(centerNode.x + offset.x, centerNode.y + offset.y);
                 int2 cornerPosition1 = new int2(centerNode.x, centerNode.y + offset.y);
                 int2 cornerPosition2 = new int2(centerNode.x + offset.x, centerNode.y);
@@ -221,8 +209,6 @@ public class PathfindingSystem : ComponentSystem {
                     eligibleNeighbours.Add(pathNodes[neighbourIndex]);
                 }
             }
-            adjacentOffsetArray.Dispose();
-            diagonalOffsetArray.Dispose();
 
             return eligibleNeighbours;
         }
@@ -303,19 +289,30 @@ public class PathfindingSystem : ComponentSystem {
             int remaining = math.abs(xDistance - yDistance);
             return DiagonalCost * math.min(xDistance, yDistance) + AdjacentCost * remaining;
         }
-        private bool successfullyReachedTarget(int2 position) {
+        private bool SuccessfullyReachedTarget(int2 position) {
             if (pathfindingType == PathfindingType.ToSpot) {
                 return position.Equals(positionEnd);
             } else {
                 for  (int i = 0; i < targets.Length; i++) {
-                    int xDistance = math.abs(position.x - targets[i].x);
-                    int yDistance = math.abs(position.y - targets[i].y);
-                    if (yDistance <= 1 && xDistance <= 1)
+                    if (position.Equals(targets[i]))
                         return true;
                 }
                 return false;
             }
         }
+    }
+
+    public static int2[] GetAllTargetsFromGrowth(List<MapGrowth> growths) {
+        int2[] output = new int2[growths.Count * 4];
+
+        for (int i = 0; i < growths.Count; i++) {
+            output[i * 4] = new int2(growths[i].locationX, growths[i].locationY) + AdjacentOffsets[0];
+            output[i * 4 + 1] = new int2(growths[i].locationX, growths[i].locationY) + AdjacentOffsets[1];
+            output[i * 4 + 2] = new int2(growths[i].locationX, growths[i].locationY) + AdjacentOffsets[2];
+            output[i * 4 + 3] = new int2(growths[i].locationX, growths[i].locationY) + AdjacentOffsets[3];
+        }
+
+        return output;
     }
 
     public struct PathNode {
