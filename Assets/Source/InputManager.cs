@@ -9,7 +9,6 @@ using Pathfinding;
 
 public class InputManager : ComponentSystem
 {
-    private float3 selectionDragStartPos;
     private Vector3 cameraDragStartPos;
     private float3 cameraObjectStartPos;
 
@@ -86,24 +85,20 @@ public class InputManager : ComponentSystem
     private void handleSelectionBox() {
         if (Input.GetMouseButtonDown(0)) {
             // Begin mouse down
-            selectionDragStartPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            WorldManager.SelectionArea.gameObject.SetActive(true);
-            WorldManager.SelectionArea.position = selectionDragStartPos;
+            SelectionBox.instance.StartSelection();
         }
         if (Input.GetMouseButton(0)) {
             // Mouse held down
-            float3 selectionAreaSize = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            WorldManager.SelectionArea.localScale = selectionAreaSize - selectionDragStartPos;
+            SelectionBox.instance.UpdateSelection();
         }
         if (Input.GetMouseButtonUp(0)) {
             // Mouse released
-            WorldManager.SelectionArea.gameObject.SetActive(false);
-            float3 endPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            (float2 startPosition, float2 endPosition) = SelectionBox.instance.EndAndGetSelection();
 
-            float leftBoundary = math.min(endPosition.x, selectionDragStartPos.x);
-            float rightBoundary = math.max(endPosition.x, selectionDragStartPos.x);
-            float downBoundary = math.min(endPosition.y, selectionDragStartPos.y);
-            float upBoundary = math.max(endPosition.y, selectionDragStartPos.y);
+            float leftBoundary = math.min(endPosition.x, startPosition.x);
+            float rightBoundary = math.max(endPosition.x, startPosition.x);
+            float downBoundary = math.min(endPosition.y, startPosition.y);
+            float upBoundary = math.max(endPosition.y, startPosition.y);
 
             Entities.ForEach((Entity entity, ref Translation translation, ref SelectableElement selectable) => {
                 float3 entityPosition = translation.Value;

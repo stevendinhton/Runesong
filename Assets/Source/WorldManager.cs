@@ -13,7 +13,6 @@ public class WorldManager : MonoBehaviour {
     
     public static MapWorld MapWorld { private set; get; }
     public static NativeArray<PathNode> PathNodesNA { private set; get; }
-    public static Transform SelectionArea { private set; get;  }
 
     public int regionSize;
     public int worldSizeByRegions;
@@ -26,8 +25,6 @@ public class WorldManager : MonoBehaviour {
 
     // Start is called before the first frame update
     void Start() {
-        SelectionArea = selectionArea;
-
         float startTime = Time.realtimeSinceStartup;
         CreateWorld();
         Debug.Log("Time(CreateWorld): " + ((Time.realtimeSinceStartup - startTime) * 1000f));
