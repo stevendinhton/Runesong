@@ -134,6 +134,9 @@ GameObject:
   - component: {fileID: 386107467}
   - component: {fileID: 386107468}
   - component: {fileID: 386107469}
+  - component: {fileID: 386107471}
+  - component: {fileID: 386107470}
+  - component: {fileID: 386107472}
   m_Layer: 0
   m_Name: Creature
   m_TagString: Untagged
@@ -243,6 +246,44 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isSelected: 0
+--- !u!114 &386107470
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 386107464}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ae969be136fe8bb4e896a2b936f3b6d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  restLevel: 250
+--- !u!114 &386107471
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 386107464}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5786a92f7a5cbc741abfcb3d7477055f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  foodLevel: 350
+--- !u!114 &386107472
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 386107464}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1fdcb85b4736c1f40831587d6cd81586, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &810200819
 GameObject:
   m_ObjectHideFlags: 0
