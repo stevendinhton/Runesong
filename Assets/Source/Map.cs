@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Entities;
 using Unity.Collections;
+using Unity.Mathematics;
 using static PathfindingSystem;
 
 namespace Map {
@@ -58,7 +59,8 @@ namespace Map {
         public int regionSize;
         public int mapWidthByRegions;
         public int mapHeightByRegions;
-        public List<MapGrowth> mapGrowths;
+        public SpatialHash2D mapGrowths;
+        public Dictionary<ushort, List<MapGrowth>> mapGrowthById;
 
         private int GetRegionIndex(int x, int y) {
             int regionLocationX = x / regionSize;
@@ -83,23 +85,15 @@ namespace Map {
             return GetMapRegionAt(x, y).GetMapTileAt(x, y);
         }
 
-        public List<MapGrowth> GetMapGrowthsAt(int x, int y) {
-            List<MapGrowth> foundGrowths = new List<MapGrowth>();
-            for(int i = 0; i < mapGrowths.Count; i++) {
-                if (mapGrowths[i].locationX == x && mapGrowths[i].locationY == y) {
-                    foundGrowths.Add(mapGrowths[i]);
-                };
-            }
-            return foundGrowths;
+        public ArrayList GetMapGrowthsAt(int x, int y) {
+            return mapGrowths.Query(new int2(x, y));
         }
-        public List<MapGrowth> GetMapGrowths(int growthCode) {
-            List<MapGrowth> foundGrowths = new List<MapGrowth>();
-            for (int i = 0; i < mapGrowths.Count; i++) {
-                if (mapGrowths[i].growthCode == growthCode) {
-                    foundGrowths.Add(mapGrowths[i]);
-                };
+        public List<MapGrowth> GetMapGrowths(ushort growthCode) {
+            if (mapGrowthById.ContainsKey(growthCode)) {
+                return mapGrowthById[growthCode];
+            } else {
+                return new List<MapGrowth>();
             }
-            return foundGrowths;
         }
 
         public void SetTile(MapTile newTile) {
@@ -113,15 +107,10 @@ namespace Map {
         }
 
         public void SetGrowth(MapGrowth newGrowth) {
-            bool found = false;
-            for (int i = 0; i < mapGrowths.Count; i++) {
-                if (mapGrowths[i].locationX == newGrowth.locationX && mapGrowths[i].locationY == newGrowth.locationY) {
-                    mapGrowths[i] = newGrowth;
-                    found = true;
-                };
-            }
-            if(!found) {
-                mapGrowths.Add(newGrowth);
+            if (mapGrowthById.ContainsKey(newGrowth.growthCode)) {
+                mapGrowthById[newGrowth.growthCode].Add(newGrowth);
+            } else {
+                mapGrowthById[newGrowth.growthCode] = new List<MapGrowth>() { newGrowth };
             }
         }
 
