@@ -16,6 +16,10 @@ public class SpatialHash2D {
         get { return idx.Keys; }
     }
 
+    public ICollection Values {
+        get { return idx.Values; }
+    }
+
     public void Insert(int2 v, object obj) {
         ArrayList cell;
         string key = Key(v);

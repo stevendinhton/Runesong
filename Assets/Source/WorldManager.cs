@@ -126,7 +126,7 @@ public class WorldManager : MonoBehaviour {
             regionSize = regionSize,
             mapHeightByRegions = 1,
             mapWidthByRegions = 1,
-            mapGrowths = new List<MapGrowth>()
+            mapGrowths = new SpatialHash2D()
         };
     }
 
@@ -164,15 +164,15 @@ public class WorldManager : MonoBehaviour {
     }
 
     private void SetGrowthTilemap() {
-        Vector3Int[] locations = new Vector3Int[MapWorld.mapGrowths.Count];
-        TileBase[] tileArray = new TileBase[MapWorld.mapGrowths.Count];
+        List<Vector3Int> locations = new List<Vector3Int>();
+        List<TileBase> tileList = new List<TileBase>();
 
-        for (int i = 0; i < MapWorld.mapGrowths.Count; i++) {
-            locations[i] = new Vector3Int(MapWorld.mapGrowths[i].locationX, MapWorld.mapGrowths[i].locationY, 0);
-            tileArray[i] = tileForGrowth[MapWorld.mapGrowths[i].growthCode];
+        foreach (MapGrowth growth in MapWorld.mapGrowths.Values) {
+            locations.Add(new Vector3Int(growth.locationX, growth.locationY, 0));
+            tileList.Add(tileForGrowth[growth.growthCode]);
         }
 
-        groundTilemap.GetComponent<Tilemap>().SetTiles(locations, tileArray);
+        groundTilemap.GetComponent<Tilemap>().SetTiles(locations.ToArray(), tileList.ToArray());
     }
 
     private void SetPathNodes() {
